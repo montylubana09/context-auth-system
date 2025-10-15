@@ -22,19 +22,43 @@
 //       );
 //     }
 
-//     // Get client IP for the verification request
-//     const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-//                     request.headers.get('x-real-ip') || 
-//                     'unknown';
+//     // Get client IP properly
+//     const forwarded = request.headers.get('x-forwarded-for');
+//     const realIP = request.headers.get('x-real-ip');
+//     const clientIP = forwarded ? forwarded.split(',')[0].trim() : (realIP || 'unknown');
 
-//     console.log('✅ OTP verified successfully for:', email);
+//     console.log('🌍 Client IP during OTP verification:', clientIP);
 
-//     // Clear OTP
+//     // Update user with login information
 //     await User.findByIdAndUpdate(user._id, {
-//       $unset: { otp: 1, otpExpires: 1 }
+//       $unset: { otp: 1, otpExpires: 1 },
+//       lastLoginIP: clientIP,
+//       lastLoginAt: new Date(),
+//       $push: {
+//         loginHistory: {
+//           timestamp: new Date(),
+//           device: 'web',
+//           userAgent: request.headers.get('user-agent') || 'unknown',
+//           ipAddress: clientIP,
+//           location: {
+//             country: 'Local Development',
+//             city: 'Localhost', 
+//             region: 'Development',
+//             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+//             latitude: 0,
+//             longitude: 0
+//           },
+//           riskScore: 0,
+//           riskFactors: ['development_environment'],
+//           status: 'success'
+//         }
+//       }
 //     });
 
-//     // Return success with user data
+//     console.log('✅ OTP verified successfully for:', email);
+//     console.log('💾 User updated with IP:', clientIP);
+
+//     // Return success with user data including real IP
 //     return NextResponse.json({
 //       success: true,
 //       message: 'Login successful',
@@ -47,7 +71,8 @@
 //         country: 'Local Development',
 //         city: 'Localhost',
 //         region: 'Development Environment'
-//       }
+//       },
+//       ipAddress: clientIP
 //     });
 //   } catch (error) {
 //     console.error('OTP verification error:', error);
@@ -57,6 +82,7 @@
 //     );
 //   }
 // }
+
 
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/database';
@@ -89,9 +115,12 @@ export async function POST(request: NextRequest) {
 
     console.log('🌍 Client IP during OTP verification:', clientIP);
 
+    // Get the OTP method for logging
+    const otpMethod = user.otpMethod || 'email';
+
     // Update user with login information
     await User.findByIdAndUpdate(user._id, {
-      $unset: { otp: 1, otpExpires: 1 },
+      $unset: { otp: 1, otpExpires: 1, otpMethod: 1 },
       lastLoginIP: clientIP,
       lastLoginAt: new Date(),
       $push: {
@@ -100,6 +129,7 @@ export async function POST(request: NextRequest) {
           device: 'web',
           userAgent: request.headers.get('user-agent') || 'unknown',
           ipAddress: clientIP,
+          mfaMethod: otpMethod, // Store which method was used
           location: {
             country: 'Local Development',
             city: 'Localhost', 
@@ -116,6 +146,7 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('✅ OTP verified successfully for:', email);
+    console.log('📱 OTP Method used:', otpMethod);
     console.log('💾 User updated with IP:', clientIP);
 
     // Return success with user data including real IP
@@ -132,7 +163,8 @@ export async function POST(request: NextRequest) {
         city: 'Localhost',
         region: 'Development Environment'
       },
-      ipAddress: clientIP
+      ipAddress: clientIP,
+      mfaMethod: otpMethod
     });
   } catch (error) {
     console.error('OTP verification error:', error);

@@ -52,6 +52,7 @@ export async function sendOTP(email: string, otp: string, subject: string = 'You
   }
 }
 
-export function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
+// export function generateOTP(): string {
+//   return Math.floor(100000 + Math.random() * 900000).toString();
+// }
+export const sendEmailOTP = sendOTP;
