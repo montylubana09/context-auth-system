@@ -80,7 +80,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/database';
-import { generateOTP, sendOTP } from '@/lib/email';
+// import { generateOTP, sendOTP } from '@/lib/email';
+import { sendOTP } from '@/lib/email'; // Remove generateOTP from here
+import { generateOTP } from '@/lib/otputils'; 
 import { getLocationFromIP, getClientIP } from '@/lib/geolocation';
 import User from '@/models/User';
 
