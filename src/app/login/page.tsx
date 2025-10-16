@@ -113,9 +113,21 @@ export default function Login() {
 
       const data = await response.json();
 
+      console.log("📡 Login response:", data);
+
       if (response.ok) {
-        // Redirect to MFA METHOD choice page (not directly to verify)
-        router.push(`/mfa-method?email=${encodeURIComponent(email)}`);
+        if (data.requiresMFAChoice) {
+          console.log("🔄 Redirecting to MFA method choice with email:", email);
+          // Redirect to MFA method choice page
+          router.push(`/mfa-method?email=${encodeURIComponent(email)}`);
+        } else if (data.requiresOTP) {
+          // Fallback: if somehow OTP was sent, go to verify page
+          console.log("🔄 Redirecting to OTP verify page");
+          router.push(`/mfa-verify?email=${encodeURIComponent(email)}`);
+        } else {
+          // Direct login (shouldn't happen in your system)
+          router.push("/dashboard");
+        }
       } else {
         setError(data.error);
       }
@@ -125,6 +137,33 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     const response = await fetch("/api/auth/login", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ email, password }),
+  //     });
+
+  //     const data = await response.json();
+
+  //     if (response.ok) {
+  //       // Redirect to MFA METHOD choice page (not directly to verify)
+  //       router.push(`/mfa-method?email=${encodeURIComponent(email)}`);
+  //     } else {
+  //       setError(data.error);
+  //     }
+  //   } catch (error) {
+  //     setError("Login failed");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
