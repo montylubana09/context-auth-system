@@ -1,16 +1,3 @@
-// import mongoose from 'mongoose';
-
-// const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/context-auth';
-
-// export async function connectDB() {
-//   try {
-//     await mongoose.connect(MONGODB_URI);
-//     console.log('MongoDB connected');
-//   } catch (error) {
-//     console.error('Database connection error:', error);
-//     throw error;
-//   }
-// }
 import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI;
