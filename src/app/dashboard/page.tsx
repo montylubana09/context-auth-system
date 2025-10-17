@@ -25,6 +25,23 @@ interface LoginData {
   timestamp: string;
   mfaMethod?: string;
 }
+const TRUSTED_IPS = [
+  "73.251.99.119", // Your primary IP address
+  "::1", // Localhost IPv6
+  "127.0.0.1", // Localhost IPv4
+];
+
+const isTrustedIP = (ip: string) => {
+  return TRUSTED_IPS.includes(ip);
+};
+
+const isDevelopmentEnvironment = (location: any) => {
+  return (
+    location?.country === "Local Development" ||
+    location?.city === "Localhost" ||
+    location?.region === "Development"
+  );
+};
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -36,7 +53,10 @@ export default function Dashboard() {
   useEffect(() => {
     console.log("🏠 Dashboard mounted");
     console.log("📊 localStorage user:", localStorage.getItem("user"));
-    console.log("📊 localStorage loginData:", localStorage.getItem("loginData"));
+    console.log(
+      "📊 localStorage loginData:",
+      localStorage.getItem("loginData")
+    );
 
     const userData = localStorage.getItem("user");
     const loginDataStr = localStorage.getItem("loginData");
@@ -65,7 +85,7 @@ export default function Dashboard() {
             time: "Just now",
             status: "success",
             ip: loginObj.ipAddress || loginObj.location.ip,
-            mfaMethod: loginObj.mfaMethod || 'email'
+            mfaMethod: loginObj.mfaMethod || "email",
           },
         ]);
       }
@@ -82,79 +102,114 @@ export default function Dashboard() {
   };
 
   // Risk assessment component - dynamic based on actual data
-  const RiskAssessmentBar = ({ loginData }: { loginData: LoginData | null }) => {
+  const RiskAssessmentBar = ({
+    loginData,
+  }: {
+    loginData: LoginData | null;
+  }) => {
     // Calculate risk score based on actual data
     const calculateRiskScore = () => {
       let score = 0;
       const factors = [];
 
-      // Check IP address (localhost is low risk)
-      if (loginData?.ipAddress === '::1' || loginData?.ipAddress === '127.0.0.1') {
-        score += 10;
-        factors.push('Login from localhost (trusted environment)');
-      } else {
-        score += 30;
-        factors.push('Login from external IP address');
+      if (!loginData) {
+        return { score: 50, factors: ["No login data available"] };
       }
 
-      // Check location data
-      if (loginData?.location?.country === 'Local Development') {
-        score += 5;
-        factors.push('Development environment detected');
+      const currentIP = loginData.ipAddress || loginData.location?.ip;
+      const YOUR_PRIMARY_IP = "73.251.99.119";
+
+      // Primary IP Match Check (Most Important - 50% weight)
+      if (currentIP && currentIP === YOUR_PRIMARY_IP) {
+        score += 10; // Very low risk for primary IP
+        factors.push("✅ Login from your primary trusted IP address");
+      } else if (currentIP && isTrustedIP(currentIP)) {
+        score += 20; // Low risk for other trusted IPs
+        factors.push("✅ Login from trusted IP address");
       } else {
-        score += 25;
-        factors.push('Production environment');
+        score += 50; // High risk for unknown IPs
+        factors.push("⚠️ Login from unknown IP address");
       }
 
-      // Check time (you could add time-based risk assessment)
-      const loginTime = loginData ? new Date(loginData.timestamp) : new Date();
+      // Environment Detection (15% weight)
+      const isDev = isDevelopmentEnvironment(loginData.location);
+      if (isDev) {
+        score += 5; // Low risk for development
+        factors.push("Development environment");
+      } else {
+        score += 15; // Normal risk for production
+        factors.push("Production environment");
+      }
+
+      // Time Analysis (15% weight)
+      const loginTime = new Date(loginData.timestamp);
       const hours = loginTime.getHours();
-      if (hours >= 9 && hours <= 17) {
-        score += 5;
-        factors.push('Login during normal hours');
+      const isNormalHours = hours >= 6 && hours <= 22;
+
+      if (isNormalHours) {
+        score += 5; // Low risk during normal hours
+        factors.push("Normal login hours");
       } else {
-        score += 15;
-        factors.push('Login outside normal business hours');
+        score += 15; // Higher risk at unusual times
+        factors.push("Unusual login time");
       }
 
-      // MFA method risk adjustment
-      if (loginData?.mfaMethod === 'phone') {
-        score += 5;
-        factors.push('SMS OTP authentication used');
+      // MFA Method (20% weight)
+      if (loginData.mfaMethod === "phone") {
+        score += 5; // Lower risk for SMS
+        factors.push("SMS OTP authentication");
       } else {
-        score += 10;
-        factors.push('Email OTP authentication used');
+        score += 10; // Medium risk for email
+        factors.push("Email OTP authentication");
+      }
+
+      // Special case: If it's your primary IP, override to very low risk
+      if (currentIP === YOUR_PRIMARY_IP) {
+        score = 15; // Force low risk for primary IP
+        if (factors[0].includes("unknown")) {
+          factors[0] = "✅ Login from your primary trusted IP address";
+        }
       }
 
       return { score: Math.min(score, 100), factors };
     };
 
     const { score, factors } = calculateRiskScore();
-    
+
     const getRiskLevel = (score: number) => {
-      if (score <= 20) return 'low';
-      if (score <= 50) return 'medium';
-      if (score <= 80) return 'high';
-      return 'critical';
+      if (score <= 20) return "low";
+      if (score <= 50) return "medium";
+      if (score <= 80) return "high";
+      return "critical";
     };
 
     const getRiskColor = (level: string) => {
       switch (level) {
-        case 'low': return 'from-green-500 to-green-600';
-        case 'medium': return 'from-yellow-500 to-yellow-600';
-        case 'high': return 'from-orange-500 to-orange-600';
-        case 'critical': return 'from-red-500 to-red-600';
-        default: return 'from-gray-500 to-gray-600';
+        case "low":
+          return "from-green-500 to-green-600";
+        case "medium":
+          return "from-yellow-500 to-yellow-600";
+        case "high":
+          return "from-orange-500 to-orange-600";
+        case "critical":
+          return "from-red-500 to-red-600";
+        default:
+          return "from-gray-500 to-gray-600";
       }
     };
 
     const getRiskLevelText = (level: string) => {
       switch (level) {
-        case 'low': return 'Low Risk';
-        case 'medium': return 'Medium Risk';
-        case 'high': return 'High Risk';
-        case 'critical': return 'Critical Risk';
-        default: return 'Unknown Risk';
+        case "low":
+          return "Low Risk";
+        case "medium":
+          return "Medium Risk";
+        case "high":
+          return "High Risk";
+        case "critical":
+          return "Critical Risk";
+        default:
+          return "Unknown Risk";
       }
     };
 
@@ -162,23 +217,29 @@ export default function Dashboard() {
 
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Security Risk Assessment</h2>
-        
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Security Risk Assessment
+        </h2>
+
         {/* Risk Score Bar */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-gray-700 font-medium">Risk Level: {getRiskLevelText(level)}</span>
+            <span className="text-gray-700 font-medium">
+              Risk Level: {getRiskLevelText(level)}
+            </span>
             <span className="text-gray-900 font-bold text-lg">{score}%</span>
           </div>
-          
+
           {/* Progress Bar Container */}
           <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
-              className={`h-3 rounded-full bg-gradient-to-r ${getRiskColor(level)} transition-all duration-500 ease-out`}
+            <div
+              className={`h-3 rounded-full bg-gradient-to-r ${getRiskColor(
+                level
+              )} transition-all duration-500 ease-out`}
               style={{ width: `${score}%` }}
             ></div>
           </div>
-          
+
           {/* Risk Scale Labels */}
           <div className="flex justify-between text-xs text-gray-500 mt-2">
             <span>0%</span>
@@ -206,10 +267,14 @@ export default function Dashboard() {
         <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
           <h3 className="text-blue-800 font-medium mb-2">Security Status</h3>
           <p className="text-blue-700 text-sm">
-            {level === 'low' && "✅ Your account security is excellent. Continue using multi-factor authentication for optimal protection."}
-            {level === 'medium' && "⚠️ Review your login locations and consider enabling additional security measures."}
-            {level === 'high' && "🚨 We recommend changing your password and reviewing recent account activity."}
-            {level === 'critical' && "🔴 Immediate action required. Please contact support and change your password immediately."}
+            {level === "low" &&
+              "✅ Your account security is excellent. Continue using multi-factor authentication for optimal protection."}
+            {level === "medium" &&
+              "⚠️ Review your login locations and consider enabling additional security measures."}
+            {level === "high" &&
+              "🚨 We recommend changing your password and reviewing recent account activity."}
+            {level === "critical" &&
+              "🔴 Immediate action required. Please contact support and change your password immediately."}
           </p>
         </div>
       </div>
@@ -288,7 +353,7 @@ export default function Dashboard() {
                   {user?.email}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {loginData?.location 
+                  {loginData?.location
                     ? `${loginData.location.city}, ${loginData.location.country}`
                     : "Online"}
                 </p>
@@ -316,7 +381,7 @@ export default function Dashboard() {
         </div>
 
         {/* Login Location Card */}
-        {loginData?.location && (
+        {/* {loginData?.location && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Current Login Session
@@ -343,7 +408,50 @@ export default function Dashboard() {
               <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
                 <p className="text-sm text-orange-700 mb-1">Environment</p>
                 <p className="font-semibold text-orange-900 text-lg">
-                  {loginData.location.country === 'Local Development' ? 'Development' : 'Production'}
+                  {loginData.location.country === "Local Development"
+                    ? "Development"
+                    : "Production"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )} */}
+        {/* Login Location Card */}
+        {loginData?.location && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Current Login Session
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <p className="text-sm text-blue-700 mb-1">IP Address</p>
+                <p className="font-semibold text-blue-900 text-lg">
+                  {loginData.ipAddress || loginData.location.ip || "Unknown"}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  {loginData.ipAddress === "73.251.99.119"
+                    ? "✅ Your primary IP"
+                    : "🔍 Unknown IP"}
+                </p>
+              </div>
+              <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                <p className="text-sm text-green-700 mb-1">Country</p>
+                <p className="font-semibold text-green-900 text-lg">
+                  {loginData.location.country || "Unknown"}
+                </p>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                <p className="text-sm text-purple-700 mb-1">City</p>
+                <p className="font-semibold text-purple-900 text-lg">
+                  {loginData.location.city || "Unknown"}
+                </p>
+              </div>
+              <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
+                <p className="text-sm text-orange-700 mb-1">IP Trust Level</p>
+                <p className="font-semibold text-orange-900 text-lg">
+                  {loginData.ipAddress === "73.251.99.119"
+                    ? "Trusted"
+                    : "Unknown"}
                 </p>
               </div>
             </div>
@@ -421,15 +529,19 @@ export default function Dashboard() {
                     <div className="flex items-center mb-2">
                       <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
                         <span className="text-purple-600 text-sm">
-                          {loginData?.mfaMethod === 'phone' ? '📱' : '📧'}
+                          {loginData?.mfaMethod === "phone" ? "📱" : "📧"}
                         </span>
                       </div>
                       <h3 className="font-semibold text-purple-900">
-                        {loginData?.mfaMethod === 'phone' ? 'SMS Verified' : 'Email Verified'}
+                        {loginData?.mfaMethod === "phone"
+                          ? "SMS Verified"
+                          : "Email Verified"}
                       </h3>
                     </div>
                     <p className="text-purple-700 text-sm">
-                      {loginData?.mfaMethod === 'phone' ? 'SMS OTP authentication active' : 'Email OTP authentication active'}
+                      {loginData?.mfaMethod === "phone"
+                        ? "SMS OTP authentication active"
+                        : "Email OTP authentication active"}
                     </p>
                   </div>
                 </div>
@@ -468,7 +580,8 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <h3 className="font-medium text-gray-900">
-                            {activity.action} via {activity.mfaMethod || 'email'}
+                            {activity.action} via{" "}
+                            {activity.mfaMethod || "email"}
                           </h3>
                           <p className="text-gray-600 text-sm">
                             {activity.location} • {activity.time}
@@ -499,12 +612,13 @@ export default function Dashboard() {
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
                   <span className="text-xl">🎉</span>
                 </div>
-                <h3 className="font-bold text-lg mb-2">Authentication Successful!</h3>
+                <h3 className="font-bold text-lg mb-2">
+                  Authentication Successful!
+                </h3>
                 <p className="text-green-100 text-sm">
-                  {loginData?.mfaMethod === 'phone' 
-                    ? 'SMS multi-factor authentication completed successfully.'
-                    : 'Email multi-factor authentication completed successfully.'
-                  }
+                  {loginData?.mfaMethod === "phone"
+                    ? "SMS multi-factor authentication completed successfully."
+                    : "Email multi-factor authentication completed successfully."}
                 </p>
               </div>
             </div>
@@ -530,7 +644,10 @@ export default function Dashboard() {
                   },
                   {
                     feature: "SMS Service",
-                    status: loginData?.mfaMethod === 'phone' ? "operational" : "standby",
+                    status:
+                      loginData?.mfaMethod === "phone"
+                        ? "operational"
+                        : "standby",
                   },
                   {
                     feature: "Geolocation API",
@@ -576,10 +693,10 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center p-3 bg-purple-50 rounded-lg">
                   <span className="text-purple-600 text-lg mr-3">
-                    {loginData?.mfaMethod === 'phone' ? '📱' : '📧'}
+                    {loginData?.mfaMethod === "phone" ? "📱" : "📧"}
                   </span>
                   <span className="text-purple-800 text-sm">
-                    {loginData?.mfaMethod === 'phone' ? 'SMS OTP' : 'Email OTP'}
+                    {loginData?.mfaMethod === "phone" ? "SMS OTP" : "Email OTP"}
                   </span>
                 </div>
                 <div className="flex items-center p-3 bg-orange-50 rounded-lg">
