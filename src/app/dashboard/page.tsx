@@ -26,7 +26,7 @@ interface LoginData {
   mfaMethod?: string;
 }
 const TRUSTED_IPS = [
-  "73.251.99.119", // Your primary IP address
+ // Your primary IP address
   "::1", // Localhost IPv6
   "127.0.0.1", // Localhost IPv4
 ];
