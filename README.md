@@ -1,36 +1,155 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔐 SecureAuth - Multi-Factor Authentication Dashboard
 
-## Getting Started
+A modern, secure authentication system with real-time risk assessment and multi-factor authentication (MFA) built with Next.js, TypeScript, and MongoDB.
 
-First, run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Live Demo
+
+**Live Application:** https://context-auth-system.vercel.app/
+**Create Account:** https://context-auth-system.vercel.app/register
+
+## ✨ Features
+
+### 🔐 Authentication & Security
+- **Multi-Factor Authentication (MFA)** - SMS & Email OTP verification
+- **Risk-Based Authentication** - Real-time security risk assessment
+- **IP Geolocation** - Automatic location detection and analysis
+- **Session Monitoring** - Active session tracking and management
+- **NIST 800-63 AAL2 Compliant** - Industry-standard security practices
+
+### 📊 Dashboard Features
+- **Real-time Risk Assessment** - Dynamic security scoring
+- **Security Overview** - Comprehensive security status
+- **Login Activity Monitoring** - Recent authentication events
+- **Device & Location Tracking** - Multi-dimensional security analysis
+- **System Status** - Service health monitoring
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   Data & APIs   │
+│                 │    │                 │    │                 │
+│ • Next.js 14    │───▶│ • API Routes    │───▶│ • MongoDB Atlas │
+│ • TypeScript    │    │ • Auth Services │    │ • IP Geolocation│
+│ • Tailwind CSS  │    │ • MFA Engine    │    │ • SMS Service   │
+│ • React Hooks   │    │ • Risk Engine   │    │ • Email Service │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Technology Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Frontend
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **React Hooks** - State management
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Backend
+- **Next.js API Routes** - Serverless backend
+- **Node.js** - Runtime environment
+- **bcrypt** - Password encryption
+- **JWT** - Session management
 
-## Learn More
+### Database & External Services
+- **MongoDB Atlas** - Cloud database
+- **IP Geolocation API** - Location detection
+- **SMS Service** - OTP delivery (Twilio/AWS SNS)
+- **Email Service** - OTP delivery (Resend/Nodemailer)
 
-To learn more about Next.js, take a look at the following resources:
+## 📦 Installation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
+- Node.js 18+ 
+- MongoDB Atlas account
+- SMS/Email service account (Twilio, Resend, etc.)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Local Development
 
-## Deploy on Vercel
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/secureauth.git
+   cd secureauth
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **Environment Configuration**
+   Create `.env.local` file:
+   ```env
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret_key
+   SMS_SERVICE_KEY=your_sms_service_api_key
+   EMAIL_SERVICE_KEY=your_email_service_api_key
+   IP_GEOLOCATION_KEY=your_geolocation_api_key
+   NEXTAUTH_SECRET=your_nextauth_secret
+   ```
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:3000`
+
+## 🚀 Deployment
+
+### Vercel Deployment (Recommended)
+
+1. **Push to GitHub**
+   ```bash
+   git add .
+   git commit -m "Initial deployment"
+   git push origin main
+   ```
+
+2. **Deploy on Vercel**
+   - Connect your GitHub repository to Vercel
+   - Add environment variables in Vercel dashboard
+   - Deploy automatically on git push
+
+### Environment Variables for Production
+```env
+MONGODB_URI=your_production_mongodb_uri
+JWT_SECRET=strong_production_secret
+SMS_SERVICE_KEY=production_sms_key
+EMAIL_SERVICE_KEY=production_email_key
+IP_GEOLOCATION_KEY=production_geolocation_key
+NEXTAUTH_SECRET=production_nextauth_secret
+```
+
+## 📱 Usage
+
+### Authentication Flow
+1. **Login** - Enter email and password
+2. **MFA Selection** - Choose SMS or Email OTP
+3. **OTP Verification** - Enter received code
+4. **Dashboard Access** - View security dashboard with real-time monitoring
+
+### User Roles
+- **Standard Users** - Access to personal security dashboard
+- **Administrators** - Full system access (future feature)
+
+## 🔒 Security Features
+
+### Authentication Security
+- Multi-factor authentication (SMS/Email OTP)
+- Password hashing with bcrypt
+- JWT token-based sessions
+- Automatic session timeout
+
+### Risk Assessment
+- Real-time IP reputation analysis
+- Geographic location risk scoring
+- Device fingerprinting
+- Behavioral anomaly detection
+
+### Data Protection
+- Encrypted data transmission (TLS)
+- Secure password storage
+- Audit logging for all authentication events
+- Regular security updates
